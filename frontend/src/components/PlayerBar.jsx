@@ -1,8 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { formatTime } from "../utils/formatTime";
 
 function PlayerBar({ song, isPlaying, onTogglePlay, onNext, onPrev }) {
   const audioRef = useRef(null);
 
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+
+  // play / pause
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !song) return;
@@ -14,15 +21,44 @@ function PlayerBar({ song, isPlaying, onTogglePlay, onNext, onPrev }) {
     }
   }, [isPlaying, song]);
 
+  // volume / mute
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.volume = volume;
+    audio.muted = isMuted;
+  }, [volume, isMuted]);
+
+  function handleSeek(e) {
+    const time = Number(e.target.value);
+    audioRef.current.currentTime = time;
+    setCurrentTime(time);
+  }
+
+  function handleVolumeChange(e) {
+    const value = Number(e.target.value);
+    setVolume(value);
+    setIsMuted(value === 0);
+  }
+
   return (
     <footer className="flex items-center justify-between border-t border-neutral-800 bg-neutral-900 px-6 py-4">
-      <audio ref={audioRef} src={song?.src} onEnded={onNext} />
+      <audio
+        ref={audioRef}
+        src={song?.src}
+        onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
+        onLoadedMetadata={(e) => setDuration(e.target.duration)}
+        onEnded={onNext}
+      />
 
+      {/* left: song info */}
       <div className="w-1/3">
         <p className="font-medium">{song ? song.title : "No song selected"}</p>
         <p className="text-sm text-neutral-400">{song ? song.artist : "-"}</p>
       </div>
 
+      {/* center: controls + progress */}
       <div className="flex w-1/3 flex-col items-center gap-2">
         <div className="flex items-center gap-6 text-xl">
           <button onClick={onPrev}>⏮</button>
@@ -34,10 +70,38 @@ function PlayerBar({ song, isPlaying, onTogglePlay, onNext, onPrev }) {
           </button>
           <button onClick={onNext}>⏭</button>
         </div>
-        <div className="h-1 w-full rounded bg-neutral-700" />
+
+        <div className="flex w-full items-center gap-2 text-xs text-neutral-400">
+          <span className="w-10 text-right">{formatTime(currentTime)}</span>
+          <input
+            type="range"
+            min="0"
+            max={duration || 0}
+            step="0.1"
+            value={currentTime}
+            onChange={handleSeek}
+            disabled={!song}
+            className="w-full accent-green-500"
+          />
+          <span className="w-10">{formatTime(duration)}</span>
+        </div>
       </div>
 
-      <div className="w-1/3 text-right text-neutral-400">🔊</div>
+      {/* right: volume */}
+      <div className="flex w-1/3 items-center justify-end gap-2">
+        <button onClick={() => setIsMuted((prev) => !prev)}>
+          {isMuted || volume === 0 ? "🔇" : "🔊"}
+        </button>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={isMuted ? 0 : volume}
+          onChange={handleVolumeChange}
+          className="w-24 accent-green-500"
+        />
+      </div>
     </footer>
   );
 }

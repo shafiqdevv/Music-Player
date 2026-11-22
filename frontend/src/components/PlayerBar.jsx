@@ -1,7 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { formatTime } from "../utils/formatTime";
 
-function PlayerBar({ song, isPlaying, onTogglePlay, onNext, onPrev }) {
+function PlayerBar({
+  song,
+  isPlaying,
+  isShuffle,
+  repeatMode,
+  onTogglePlay,
+  onNext,
+  onPrev,
+  onEnded,
+  onToggleShuffle,
+  onToggleRepeat,
+}) {
   const audioRef = useRef(null);
 
   const [currentTime, setCurrentTime] = useState(0);
@@ -47,9 +58,10 @@ function PlayerBar({ song, isPlaying, onTogglePlay, onNext, onPrev }) {
       <audio
         ref={audioRef}
         src={song?.src}
+        loop={repeatMode === "one"}
         onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
         onLoadedMetadata={(e) => setDuration(e.target.duration)}
-        onEnded={onNext}
+        onEnded={onEnded}
       />
 
       {/* left: song info */}
@@ -61,6 +73,12 @@ function PlayerBar({ song, isPlaying, onTogglePlay, onNext, onPrev }) {
       {/* center: controls + progress */}
       <div className="flex w-1/3 flex-col items-center gap-2">
         <div className="flex items-center gap-6 text-xl">
+          <button
+            onClick={onToggleShuffle}
+            className={isShuffle ? "border-b-2 border-green-500" : "opacity-40"}
+          >
+            🔀
+          </button>
           <button onClick={onPrev}>⏮</button>
           <button
             onClick={onTogglePlay}
@@ -69,6 +87,16 @@ function PlayerBar({ song, isPlaying, onTogglePlay, onNext, onPrev }) {
             {isPlaying ? "⏸" : "▶"}
           </button>
           <button onClick={onNext}>⏭</button>
+          <button
+            onClick={onToggleRepeat}
+            className={
+              repeatMode === "off"
+                ? "opacity-40"
+                : "border-b-2 border-green-500"
+            }
+          >
+            {repeatMode === "one" ? "🔂" : "🔁"}
+          </button>
         </div>
 
         <div className="flex w-full items-center gap-2 text-xs text-neutral-400">
